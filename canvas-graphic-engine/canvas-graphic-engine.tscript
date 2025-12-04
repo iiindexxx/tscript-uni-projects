@@ -1,0 +1,167 @@
+var colors = {
+	"black": [0,0,0],
+	"red": [1,0,0]
+};
+
+class CanvasDrawEngine{
+	public:
+		var elements;
+		
+		function addElement(element){
+			try{
+				var type = element.getType();
+			}catch var ex do{
+				error(ex);
+				throw "Element that was about to added does not have a valid type";
+			}
+			
+			elements.push(element);
+			logger.logInfo("Added new element of type " + Type(element));
+		}
+		
+		function tick(event){
+			updateElements();
+			repaint();
+		}
+		
+		function mouseMove(event){
+			for var element in elements do{
+				if(isMouseOnElement(event.x, event.y, element))then{
+					element.hover();
+				}else{
+					element.unHover();
+				}
+			}
+		}
+		
+		function repaint(){
+			logger.logInfo("Repaint triggered");
+			canvas.setFillColor(1,1,1);
+			canvas.clear();
+			paint();
+		}
+	
+		constructor(env_ = "prod"){
+			elements = [];
+			env = env_;
+			logger = LogService(env);
+			setEventHandler("timer", tick);
+			setEventHandler("canvas.mousemove", mouseMove);
+		}
+	
+	
+	private:
+		var logger;
+		var env;
+		
+		function isMouseOnElement(mouseX, mouseY, element){
+			if((mouseX >= element.x and mouseX <= element.x+element.xSize) 
+			and (mouseY >= element.y and mouseY <= element.y+element.ySize)) then{
+				return true;
+			}
+			
+			return false;
+		}
+		
+		function updateElements(){
+			for var element in elements do{
+				for var property in element.properties do{
+					property.execute(element);
+				}
+			}
+		}
+		
+		function paint(){
+			for var element in elements do{
+				if(Type(element) == RectElement)then{
+					paintRect(element);
+				}
+			}
+		}
+		
+		function paintRect(element){
+			logger.logInfo("paintRect triggered");
+			canvas.setFillColor(colors[element.color][0],colors[element.color][1],colors[element.color][2]);
+			canvas.fillRect(element.x, element.y, element.xSize, element.ySize);
+		}
+}
+
+class LogService{
+	private:
+		var logLevel;
+		var env;
+	
+	public:
+		constructor(env_){
+			env = env_;
+		}
+		
+		function logInfo(log){
+			if(env == "prod") then return;
+			print("INF | " + log);
+		}
+}
+
+class CanvasElement{
+	public:
+		var x;
+		var y;
+		var xSize;
+		var ySize;
+		var z;
+		var properties;
+		var hover;
+		
+		
+		constructor(x_, y_, xSize_, ySize_, properties_ = [], z_ = 0){
+			x = x_;
+			y = y_;
+			xSize = xSize_;
+			ySize = ySize_;
+			properties = properties_;
+			z = z_;
+			hover = function(){};
+		}
+}
+
+class RectElement : CanvasElement{
+	public:
+		var color;
+		constructor(x_, y_, xSize_, ySize_, color_ = "black", properties_ = [], z_ = 0):super(x_, y_, xSize_, ySize_, properties_, z_){
+			color = color_;
+		}
+		
+		function getType(){
+			return "for now ok";
+		}
+}
+
+class Movement {
+	public:
+		var xVelocity;
+		var yVelocity;
+		var xAccel;
+		var yAccel;
+		
+		constructor(xVelocity_, yVelocity_, xAccel_ = 1, yAccel_ = 1) {
+			xVelocity = xVelocity_;
+			yVelocity = yVelocity_;
+			xAccel = xAccel_;
+			yAccel = yAccel_;
+		}
+		
+		function execute(element){
+			xVelocity = xVelocity * xAccel;
+			yVelocity = yVelocity * yAccel;
+			element.x += xVelocity;
+			element.y += yVelocity;
+		}
+}
+
+var engine = CanvasDrawEngine();
+var rect = RectElement(50, 50, 50, 50, properties_=[Movement(1,1)]);
+rect.hover = function(){
+	rect.color = "red";
+};
+engine.addElement(rect);
+enterEventMode();
