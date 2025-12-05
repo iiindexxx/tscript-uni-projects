@@ -6,6 +6,8 @@ var colors = {
 class CanvasDrawEngine{
 	public:
 		var elements;
+		var lastMouseX = 0;
+		var lastMouseY = 0;
 		
 		function addElement(element){
 			try{
@@ -29,13 +31,8 @@ class CanvasDrawEngine{
 		}
 		
 		function mouseMove(event){
-			for var element in elements do{
-				if(isMouseOnElement(event.x, event.y, element))then{
-					element.setHoverState(true);
-				}else{
-					element.setHoverState(false);
-				}
-			}
+			lastMouseX = event.x;
+			lastMouseY = event.y;
 		}
 		
 		function repaint(){
@@ -73,6 +70,12 @@ class CanvasDrawEngine{
 		
 		function updateElements(){
 			for var element in elements do{
+				if(isMouseOnElement(lastMouseX, lastMouseY, element))then{
+					element.setHoverState(true);
+				}else{
+					element.setHoverState(false);
+				}
+				
 				for var property in element.properties do{
 					property.execute(element);
 				}
