@@ -9,10 +9,9 @@ class CanvasDrawEngine{
 		
 		function addElement(element){
 			try{
-				var type = element.getType();
+				element.getType();
 			}catch var ex do{
-				error(ex);
-				throw "Element that was about to added does not have a valid type";
+				throw "Element that was about to be added does not have a valid type";
 			}
 			
 			elements.push(element);
@@ -20,16 +19,21 @@ class CanvasDrawEngine{
 		}
 		
 		function tick(event){
-			updateElements();
-			repaint();
+			var localTime = localtime();
+			var deltaTime = localTime - previousTime;
+			if(deltaTime > deltaTimeThreshould)then{
+				updateElements();
+				repaint();
+				previousTime = localTime;
+			}
 		}
 		
 		function mouseMove(event){
 			for var element in elements do{
 				if(isMouseOnElement(event.x, event.y, element))then{
-					element.hover();
+					element.setHoverState(true);
 				}else{
-					element.unHover();
+					element.setHoverState(false);
 				}
 			}
 		}
@@ -47,12 +51,16 @@ class CanvasDrawEngine{
 			logger = LogService(env);
 			setEventHandler("timer", tick);
 			setEventHandler("canvas.mousemove", mouseMove);
+			previousTime  = localtime();
+			deltaTimeThreshould = 16.66;
 		}
 	
 	
 	private:
 		var logger;
 		var env;
+		var previousTime;
+		var deltaTimeThreshould;
 		
 		function isMouseOnElement(mouseX, mouseY, element){
 			if((mouseX >= element.x and mouseX <= element.x+element.xSize) 
@@ -109,9 +117,9 @@ class CanvasElement{
 		var xSize;
 		var ySize;
 		var z;
-		var properties;
-		var hover;
-		
+		var properties;	
+		var onHoverStateChanged;
+		var hoverState;
 		
 		constructor(x_, y_, xSize_, ySize_, properties_ = [], z_ = 0){
 			x = x_;
@@ -120,13 +128,22 @@ class CanvasElement{
 			ySize = ySize_;
 			properties = properties_;
 			z = z_;
-			hover = function(){};
+			hoverState = false;
+			onHoverStateChanged = function(hoverState){};
+		}
+		
+		function setHoverState(state){
+			if(hoverState != state)then{
+				onHoverStateChanged(state);
+			}
+			hoverState = state;
 		}
 }
 
 class RectElement : CanvasElement{
 	public:
 		var color;
+		
 		constructor(x_, y_, xSize_, ySize_, color_ = "black", properties_ = [], z_ = 0):super(x_, y_, xSize_, ySize_, properties_, z_){
 			color = color_;
 		}
@@ -136,7 +153,7 @@ class RectElement : CanvasElement{
 		}
 }
 
-class Movement {
+class StaticMovement {
 	public:
 		var xVelocity;
 		var yVelocity;
@@ -159,9 +176,13 @@ class Movement {
 }
 
 var engine = CanvasDrawEngine();
-var rect = RectElement(50, 50, 50, 50, properties_=[Movement(1,1)]);
-rect.hover = function(){
-	rect.color = "red";
+var rect = RectElement(50, 50, 50, 50, properties_=[StaticMovement(1,0,1.01,1)]);
+rect.onHoverStateChanged = function(hoverState){
+	if(hoverState)then{
+		rect.color = "red";
+	}else{
+		rect.color = "black";
+	}
 };
 engine.addElement(rect);
 enterEventMode();
